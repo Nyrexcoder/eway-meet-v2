@@ -44,8 +44,8 @@ services:
       - ./jitsi-cfg/web/images/logo.png:/usr/share/jitsi-meet/images/favicon.ico
       - ./jitsi-cfg/web/images/logo.png:/usr/share/jitsi-meet/images/apple-touch-icon.png
       - ./jitsi-cfg/web/static/welcomePageAdditionalContent.html:/usr/share/jitsi-meet/static/welcomePageAdditionalContent.html
-      - ./jitsi-cfg/web/manifest.json:/usr/share/jitsi-meet/manifest.json
-      - ./jitsi-cfg/web/index.html:/usr/share/jitsi-meet/index.html
+      - ./jitsi-cfg/web/custom-manifest.json:/usr/share/jitsi-meet/manifest.json
+      - ./jitsi-cfg/web/custom-index.html:/usr/share/jitsi-meet/index.html
     depends_on:
       - prosody
       - jicofo

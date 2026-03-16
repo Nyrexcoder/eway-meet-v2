@@ -1,0 +1,535 @@
+<html itemscope itemtype="http://schema.org/Product" prefix="og: http://ogp.me/ns#" xmlns="http://www.w3.org/1999/html">
+  <head>
+    <script>
+    // URL Parameter Preservation & Clipboard Sanitation
+    (function() {
+        // 1. Capture initial params immediately
+        var initialUrl = new URL(window.location.href);
+        var paramsToKeep = ['token', 'user_token', 'type'];
+        var preservedParams = {};
+        
+        paramsToKeep.forEach(function(key) {
+            if (initialUrl.searchParams.has(key)) {
+                preservedParams[key] = initialUrl.searchParams.get(key);
+            }
+        });
+
+        // 2. Override History API to keep params in URL bar
+        var originalPushState = history.pushState;
+        var originalReplaceState = history.replaceState;
+
+        function injectParams(url) {
+            if (!url) return url;
+            try {
+                // Handle relative URLs
+                var fullUrl = new URL(url, window.location.origin);
+                var changed = false;
+                
+                Object.keys(preservedParams).forEach(function(key) {
+                    if (!fullUrl.searchParams.has(key)) {
+                        fullUrl.searchParams.set(key, preservedParams[key]);
+                        changed = true;
+                    }
+                });
+                
+                if (changed) {
+                    // Return path + search + hash
+                    return fullUrl.pathname + fullUrl.search + fullUrl.hash;
+                }
+            } catch (e) {
+                console.warn('URL preservation error:', e);
+            }
+            return url;
+        }
+
+        history.pushState = function(state, title, url) {
+            return originalPushState.apply(history, [state, title, injectParams(url)]);
+        };
+
+        history.replaceState = function(state, title, url) {
+            return originalReplaceState.apply(history, [state, title, injectParams(url)]);
+        };
+
+        // 3. Override Clipboard API for Invite Link Sanitation
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            var originalWriteText = navigator.clipboard.writeText;
+            navigator.clipboard.writeText = function(text) {
+                // Only sanitize if it looks like our meeting URL
+                if (typeof text === 'string' && (text.startsWith('http') || text.includes(window.location.host))) {
+                    try {
+                        var url = new URL(text);
+                        // Ensure token and type are present if missing
+                        if (preservedParams['token'] && !url.searchParams.has('token')) {
+                            url.searchParams.set('token', preservedParams['token']);
+                        }
+                        if (preservedParams['type'] && !url.searchParams.has('type')) {
+                            url.searchParams.set('type', preservedParams['type']);
+                        }
+                        
+                        // Remove user_token (SENSITIVE)
+                        if (url.searchParams.has('user_token')) {
+                            url.searchParams.delete('user_token');
+                            text = url.toString();
+                        } else if (preservedParams['token'] || preservedParams['type']) {
+                             // If we added params but didn't delete user_token (e.g. wasn't there), update text
+                             text = url.toString();
+                        }
+                    } catch (e) {
+                        // ignore
+                    }
+                }
+                return originalWriteText.apply(navigator.clipboard, [text]);
+            };
+        }
+    })();
+    </script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var urlParams = new URLSearchParams(window.location.search);
+        var token = urlParams.get('token');
+        var userToken = urlParams.get('user_token');
+        var liveClassId = null;
+
+        // Create overlay
+        var overlay = document.createElement('div');
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.backgroundColor = '#2A3A4B';
+        overlay.style.color = 'white';
+        overlay.style.zIndex = '9999';
+        overlay.style.display = 'flex';
+        overlay.style.flexDirection = 'column';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        overlay.style.fontFamily = 'Helvetica, sans-serif';
+        overlay.innerHTML = '<h1 style="color: white !important;">Verifying access...</h1>';
+        document.body.appendChild(overlay);
+
+        if (!token) {
+            overlay.innerHTML = '<h1 style="color: white !important;">Access Denied</h1><p style="color: white !important;">Authentication token is missing.</p>';
+            return;
+        }
+
+        // Use absolute path to backend to avoid localhost issues in production
+        var verifyUrl = 'https://studentone.in/api/live-classes/verify-token?token=' + encodeURIComponent(token);
+        var headers = {};
+        if (userToken) {
+            headers['Authorization'] = 'Bearer ' + userToken;
+        }
+
+        fetch(verifyUrl, { headers: headers })
+            .then(function(response) {
+                if (response.ok) return response.json();
+                return response.json().then(function(errData) {
+                    throw new Error(errData.message || 'Access denied');
+                }).catch(function() {
+                    throw new Error('Network response was not ok: ' + response.status);
+                });
+            })
+            .then(function(data) {
+                if (data.status === 'valid' && data.access_granted) {
+                    // Success
+                    overlay.remove();
+                    // Show react app
+                    var style = document.getElementById('hide-react-style');
+                    if (style) style.remove();
+                    
+                    // Extract live_class_id if available
+                    if (data.live_class && data.live_class.id) {
+                        liveClassId = data.live_class.id;
+                        window.LIVE_CLASS_ID = liveClassId; // Store globally for file upload
+                    }
+                    
+                    // Set user info if available
+                    if (data.user) {
+                        window.PREFILLED_PROFILE = {
+                            displayName: data.user.name,
+                            email: data.user.email
+                        };
+                    }
+
+                    // Start Jitsi App
+                    if (window.runJitsiApp) {
+                        window.runJitsiApp();
+                    } else {
+                        window.isAccessGranted = true;
+                    }
+
+                    // Initialize File Sharing Injection
+                    initFileSharing();
+                } else {
+                    throw new Error(data.message || 'Access denied');
+                }
+            })
+            .catch(function(error) {
+                console.error('Verification error:', error);
+                overlay.innerHTML = '<h1 style="color: white !important;">Access Denied</h1><p style="color: white !important;">' + error.message + '</p>';
+            });
+    });
+
+    // Custom File Sharing Logic
+    function initFileSharing() {
+        var observer = new MutationObserver(function(mutations) {
+            // Look for chat input
+            var chatInput = document.querySelector('#usermsg') || document.querySelector('textarea[id^="chat-input"]');
+            if (chatInput && !document.getElementById('custom-file-upload-btn')) {
+                addFileSharingButton(chatInput);
+            }
+        });
+
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
+
+    function addFileSharingButton(chatInput) {
+        var container = chatInput.parentNode;
+        
+        // Create File Input
+        var fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.style.display = 'none';
+        fileInput.id = 'custom-file-input';
+        
+        // Create Button Wrapper to avoid layout breaking
+        var btn = document.createElement('div');
+        btn.id = 'custom-file-upload-btn';
+        btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 0 1 5 0v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5a2.5 2.5 0 0 0 5 0V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/></svg>';
+        
+        // Styled to match standard toolbar icons
+        btn.style.cursor = 'pointer';
+        btn.style.width = '32px';
+        btn.style.height = '32px';
+        btn.style.minWidth = '32px'; // Prevent shrinking
+        btn.style.display = 'flex';
+        btn.style.alignItems = 'center';
+        btn.style.justifyContent = 'center';
+        btn.style.marginRight = '8px';
+        btn.style.borderRadius = '50%'; // Circle hover effect
+        btn.style.transition = 'background-color 0.2s';
+        
+        // Hover effects
+        btn.onmouseenter = function() { btn.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'; };
+        btn.onmouseleave = function() { btn.style.backgroundColor = 'transparent'; };
+        
+        btn.title = "Share File";
+        
+        // Ensure container handles flex correctly
+        if (getComputedStyle(container).display !== 'flex') {
+            container.style.display = 'flex';
+            container.style.alignItems = 'center';
+        }
+        
+        // Insert before input
+        container.insertBefore(btn, chatInput);
+        container.appendChild(fileInput);
+        
+        // Events
+        btn.onclick = function() {
+            fileInput.click();
+        };
+        
+        fileInput.onchange = function() {
+            if (fileInput.files.length > 0) {
+                // Get required params
+                var urlParams = new URLSearchParams(window.location.search);
+                var token = urlParams.get('token');
+                
+                // We need liveClassId from the outer scope or extracted here again if stored globally
+                // Since we captured it in the DOMContentLoaded scope, we need access to it.
+                // The cleaner way is to store it on window object
+                var currentLiveClassId = window.LIVE_CLASS_ID;
+
+                if (!currentLiveClassId) {
+                    alert('Error: Live Class ID not found. Cannot upload file.');
+                    return;
+                }
+                if (!token) {
+                    alert('Error: Token not found. Cannot upload file.');
+                    return;
+                }
+
+                uploadFile(fileInput.files[0], chatInput, currentLiveClassId, token);
+            }
+        };
+    }
+
+    function uploadFile(file, chatInput, liveClassId, token) {
+        var formData = new FormData();
+        formData.append('file', file);
+        formData.append('token', token);
+        
+        // Show uploading state
+        var btn = document.getElementById('custom-file-upload-btn');
+        var originalHtml = btn.innerHTML;
+        btn.innerHTML = '<span style="color: white; font-size: 12px;">...</span>';
+        
+        // Construct API URL
+        // Use absolute path to backend to avoid localhost issues in production
+        var uploadUrl = 'https://studentone.in/api/live-classes/' + liveClassId + '/files';
+
+        fetch(uploadUrl, {
+            method: 'POST',
+            // No Authorization header needed as per instructions, token is in body
+            body: formData
+        })
+        .then(function(response) {
+            return response.json().then(function(data) {
+                if (!response.ok) {
+                    throw new Error(data.message || 'Upload failed with status ' + response.status);
+                }
+                return data;
+            });
+        })
+        .then(function(data) {
+            if (data.public_url) {
+                var link = data.public_url;
+                var fileName = data.file ? data.file.file_name : 'file';
+                var message = 'Shared a file: ' + link;
+                
+                // Insert into chat
+                var nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set;
+                nativeInputValueSetter.call(chatInput, chatInput.value + (chatInput.value ? '\n' : '') + message);
+                
+                var inputEvent = new Event('input', { bubbles: true});
+                chatInput.dispatchEvent(inputEvent);
+                
+                chatInput.focus();
+            } else {
+                throw new Error('Upload successful but no public URL returned');
+            }
+        })
+        .catch(function(err) {
+            console.error('File upload error:', err);
+            alert('File upload error: ' + err.message);
+        })
+        .finally(function() {
+            btn.innerHTML = originalHtml;
+            document.getElementById('custom-file-input').value = '';
+        });
+    }
+    </script>
+    <style id="hide-react-style">
+        #react { display: none !important; }
+    </style>
+    <!--#include virtual="head.html" -->
+    <meta charset="utf-8">
+    <meta http-equiv="content-type" content="text/html;charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta name="theme-color" content="#2A3A4B">
+    <!--#include virtual="base.html" -->
+
+    <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+    <link rel="stylesheet" href="css/all.css?v=9008">
+    <!--#include virtual="fonts.html"-->
+    <link rel="manifest" id="manifest-placeholder">
+
+    <script>
+        function contextRoot(pathname) {
+            const contextRootEndIndex = pathname.lastIndexOf('/');
+
+            return (
+                contextRootEndIndex === -1
+                ? '/'
+                : pathname.substring(0, contextRootEndIndex + 1)
+            );
+        }
+        window.EXCALIDRAW_ASSET_PATH = 'libs/';
+        // Dynamically generate the manifest location URL. It must be served from the document origin, and we may have
+        // the base pointing to the CDN. This way we can generate a full URL which will bypass the base.
+        document.querySelector('#manifest-placeholder').setAttribute('href', window.location.origin + contextRoot(window.location.pathname) + 'manifest.json'); 
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!JitsiMeetJS.app) {
+                return;
+            }
+
+            window.runJitsiApp = () => {
+                JitsiMeetJS.app.renderEntryPoint({
+                    Component: JitsiMeetJS.app.entryPoints.APP
+                })
+            };
+
+            // Check if access was already granted by the verification script
+            if (window.isAccessGranted) {
+                window.runJitsiApp();
+            }
+
+            const isEmbedded = () => {
+                try {
+                    return window.self !== window.top;
+                } catch (e) {
+                    return true;
+                }
+            };
+
+            const isElectron = navigator.userAgent.includes('Electron');        
+            const shouldRegisterWorker = !isElectron && !isEmbedded() && 'serviceWorker' in navigator;
+
+            if (shouldRegisterWorker) {
+                navigator.serviceWorker
+                    .register(window.location.origin + contextRoot(window.location.pathname) + 'pwa-worker.js')
+                    .then(reg => {
+                        console.log('Service worker registered.', reg);
+                    })
+                    .catch(err => {
+                        console.log(err);
+                    });
+            }
+        });
+    </script>
+    <script>
+        // IE11 and earlier can be identified via their user agent and be       
+        // redirected to a page that is known to have no newer js syntax.       
+        if (window.navigator.userAgent.match(/(MSIE|Trident)/)) {
+            var roomName = encodeURIComponent(window.location.pathname);        
+            window.location.pathname = 'static/recommendedBrowsers.html';       
+        }
+
+        window.indexLoadedTime = window.performance.now();
+        console.log("(TIME) index.html loaded:\t", indexLoadedTime);
+        window.addEventListener('load', function() {
+            window.loadedEventTime = window.performance.now();
+            console.log("(TIME) window loaded event:\t", loadedEventTime);      
+        });
+
+        // XXX the code below listeners for errors and displays an error message
+        // in the document body when any of the required files fails to load.   
+        // The intention is to prevent from displaying broken page.
+        var criticalFiles = [
+            "config.js",
+            "utils.js",
+            "do_external_connect.js",
+            "interface_config.js",
+            "lib-jitsi-meet.min.js",
+            "app.bundle.min.js",
+            "all.css?v=9008"
+        ];
+        var loadErrHandler = function(e) {
+            var target = e.target;
+            // Error on <script> and <link>(CSS)
+            // <script> will have .src and <link> .href
+            var fileRef = (target.src ? target.src : target.href);
+            if (("SCRIPT" === target.tagName || "LINK" === target.tagName)      
+                && criticalFiles.some(
+                    function(file) { return fileRef.indexOf(file) !== -1 })) {  
+                window.onload = function() {
+                    // The whole complex part below implements page reloads with
+                    // "exponential backoff". The retry attempt is passes as    
+                    // "rCounter" query parameter
+                    var href = window.location.href;
+
+                    var retryMatch = href.match(/.+(\?|&)rCounter=(\d+)/);      
+                    var retryCountStr = retryMatch ? retryMatch[2] : "0";       
+                    var retryCount = Number.parseInt(retryCountStr);
+
+                    if (retryMatch == null) {
+                        var separator = href.indexOf("?") === -1 ? "?" : "&";   
+                        var hashIdx = href.indexOf("#");
+
+                        if (hashIdx === -1) {
+                            href += separator + "rCounter=1";
+                        } else {
+                            var hashPart = href.substr(hashIdx);
+
+                            href = href.substr(0, hashIdx)
+                                + separator + "rCounter=1" + hashPart;
+                        }
+                    } else {
+                        var separator = retryMatch[1];
+
+                        href = href.replace(
+                            /(\?|&)rCounter=(\d+)/,
+                            separator + "rCounter=" + (retryCount + 1));        
+                    }
+
+                    var delay = Math.pow(2, retryCount) * 2000;
+                    if (isNaN(delay) || delay < 2000 || delay > 60000)
+                        delay = 10000;
+
+                    var showMoreText = "show more";
+                    var showLessText = "show less";
+
+                    document.body.innerHTML
+                        = "<div style='"
+                        + "position: absolute;top: 50%;left: 50%;"
+                        + "text-align: center;"
+                        + "font-size: medium;"
+                        + "font-weight: 400;"
+                        + "transform: translate(-50%, -50%)'>"
+                        + "Uh oh! We couldn't fully download everything we needed :("
+                        + "<br/> "
+                        + "We will try again shortly. In the mean time, check for problems with your Internet connection!"
+                        + "<br/><br/> "
+                        + "<div id='moreInfo' style='"
+                        + "display: none;'>" + "Missing " + fileRef
+                        + "<br/><br/></div>"
+                        + "<a id='showMore' style='"
+                        + "text-decoration: underline;"
+                        + "font-size:small;"
+                        + "cursor: pointer'>" + showMoreText + "</a>"
+                        + "&nbsp;&nbsp;&nbsp;"
+                        + "<a id ='reloadLink' style='"
+                        + "text-decoration: underline;"
+                        + "font-size:small;"
+                        + "'>reload now</a>"
+                        + "</div>";
+
+                    var reloadLink = document.getElementById('reloadLink');     
+                    reloadLink.setAttribute('href', href);
+
+                    var showMoreElem = document.getElementById("showMore");     
+                    showMoreElem.addEventListener('click', function () {        
+                            var moreInfoElem
+                                    = document.getElementById("moreInfo");      
+
+                            if (showMoreElem.innerHTML === showMoreText) {      
+                                moreInfoElem.setAttribute(
+                                    "style",
+                                    "display: block;"
+                                    + "color:#FF991F;"
+                                    + "font-size:small;"
+                                    + "user-select:text;");
+                                showMoreElem.innerHTML = showLessText;
+                            }
+                            else {
+                                moreInfoElem.setAttribute(
+                                    "style", "display: none;");
+                                showMoreElem.innerHTML = showMoreText;
+                            }
+                        });
+
+                    window.setTimeout(
+                        function () { window.location.replace(href); }, delay); 
+
+                    // Call extra handler if defined.
+                    if (typeof postLoadErrorHandler === "function") {
+                        postLoadErrorHandler(fileRef);
+                    }
+                };
+                window.removeEventListener(
+                    'error', loadErrHandler, true /* capture phase */);
+            }
+        };
+        window.addEventListener(
+            'error', loadErrHandler, true /* capture phase type of listener */);
+    </script>
+    <script><!--#include virtual="/config.js" --></script><!-- adapt to your needs, i.e. set hosts and bosh path -->
+    <script><!--#include virtual="/interface_config.js" --></script>
+    <script src="libs/lib-jitsi-meet.min.js?v=9008"></script>
+    <script src="libs/app.bundle.min.js?v=9008"></script>
+    <!--#include virtual="title.html" -->
+    <!--#include virtual="plugin.head.html" -->
+    <!--#include virtual="static/welcomePageAdditionalContent.html" -->
+    <!--#include virtual="static/welcomePageAdditionalCard.html" -->
+    <!--#include virtual="static/settingsToolbarAdditionalContent.html" -->     
+  </head>
+  <body>
+    <noscript aria-hidden="true">
+        <div>JavaScript is disabled. </br>For this site to work you have to enable JavaScript.</div>
+    </noscript>
+    <!--#include virtual="body.html" -->
+    <div id="react" role="main"></div>
+  </body>
+</html>

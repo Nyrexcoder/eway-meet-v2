@@ -1,0 +1,42 @@
+
+<script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+</script>
+
+<style>
+/* Hide default jitsi footer */
+.welcome .welcome-footer {
+    display: none;
+}
+
+/* Custom footer */
+.custom-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    padding: 15px;
+    color: #fff;
+    font-size: 14px;
+    background: #151515;
+    z-index: 9;
+}
+
+/* Override watermark size */
+.welcome-page .watermark {
+    width: 300px !important;
+    height: 150px !important;
+    max-width: none !important;
+    max-height: none !important;
+    background-size: contain !important;
+}
+
+.watermark.leftwatermark {
+    width: 300px !important;
+    height: 150px !important;
+    max-width: none !important;
+    max-height: none !important;
+    background-size: contain !important;
+}
+</style>

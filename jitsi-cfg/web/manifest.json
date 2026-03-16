@@ -1,0 +1,29 @@
+{
+  "android_package_name": "org.jitsi.meet",
+  "prefer_related_applications": true,
+  "related_applications": [
+    {
+      "id": "org.jitsi.meet",
+      "platform": "chromeos_play"
+    }
+  ],
+  "short_name": "Eway Meet",
+  "name": "Eway Meet",
+  "icons": [
+    {
+      "src": "images/watermark.svg",
+      "type": "image/svg",
+      "sizes": "192x192"
+    },
+    {
+      "src": "images/watermark.svg",
+      "type": "image/svg",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#17A0DB",
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#17A0DB"
+}

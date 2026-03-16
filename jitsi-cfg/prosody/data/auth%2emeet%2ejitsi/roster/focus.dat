@@ -1,0 +1,11 @@
+return {
+	[false] = {
+		["version"] = 4;
+		["pending"] = {};
+	};
+	["focus.meet.jitsi"] = {
+		["groups"] = {};
+		["subscription"] = "from";
+		["ask"] = "subscribe";
+	};
+};

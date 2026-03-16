@@ -1,0 +1,168 @@
+services:
+  web:
+    image: jitsi/web:stable
+    restart: unless-stopped
+    ports:
+      - "8180:80"
+      - "8443:443"
+    environment:
+      - PUBLIC_URL=https://eway-meet.studentone.in
+      - ENABLE_HTTP_REDIRECT=1
+      - HTTP_PORT=8180
+      - HTTPS_PORT=8443
+      - TZ=UTC
+      - DOCKER_HOST_ADDRESS=76.13.246.154
+      - CONFIG=./jitsi-cfg
+      - XMPP_DOMAIN=meet.jitsi
+      - XMPP_AUTH_DOMAIN=auth.meet.jitsi
+      - XMPP_MUC_DOMAIN=muc.meet.jitsi
+      - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.meet.jitsi
+      - XMPP_RECORDER_DOMAIN=recorder.meet.jitsi
+      - ENABLE_AUTH=0
+      - ENABLE_GUESTS=1
+      - ENABLE_XMPP_WEBSOCKET=1
+      - WHITEBOARD_ENABLED=1
+      - WHITEBOARD_COLLAB_SERVER_PUBLIC_URL=https://eway-meet.studentone.in/excalidraw-collab
+      - ENABLE_COLIBRI_WEBSOCKET=1
+      - JVB_PORT=10000
+      - JVB_TCP_PORT=4443
+      - JVB_ENABLE_TCP_HARVESTER=1
+      - JICOFO_COMPONENT_SECRET=901f4a027a0c4b8da3a4b069b84c9a6f
+      - JICOFO_AUTH_PASSWORD=7d9d6e29c4fd482a9d7c6c2e807e5e3f
+      - JVB_AUTH_PASSWORD=6d12a9c7b8f14fbd96eab0f923f84a2c
+    volumes:
+      - ./jitsi-cfg/web:/config
+      - ./jitsi-cfg/web/letsencrypt:/etc/letsencrypt
+      - ./jitsi-cfg/web/title.html:/usr/share/jitsi-meet/title.html
+      - ./jitsi-cfg/web/lang/main.json:/usr/share/jitsi-meet/lang/main.json
+      - ./jitsi-cfg/web/lang/main-en.json:/usr/share/jitsi-meet/lang/main-en.json
+      - ./jitsi-cfg/web/lang/main-en-US.json:/usr/share/jitsi-meet/lang/main-en-US.json
+      - ./jitsi-cfg/web/interface_config_custom_v2.js:/config/interface_config.js:ro
+      - ./jitsi-cfg/web/interface_config_custom_v2.js:/usr/share/jitsi-meet/interface_config.js:ro
+      - ./jitsi-cfg/web/images/watermark.svg:/usr/share/jitsi-meet/images/watermark.svg
+      - ./jitsi-cfg/web/images/logo.png:/usr/share/jitsi-meet/images/logo.png
+      - ./jitsi-cfg/web/images/logo.png:/usr/share/jitsi-meet/images/favicon.ico
+      - ./jitsi-cfg/web/images/logo.png:/usr/share/jitsi-meet/images/apple-touch-icon.png
+      - ./jitsi-cfg/web/static/welcomePageAdditionalContent.html:/usr/share/jitsi-meet/static/welcomePageAdditionalContent.html
+      - ./jitsi-cfg/web/manifest.json:/usr/share/jitsi-meet/manifest.json
+      - ./jitsi-cfg/web/index.html:/usr/share/jitsi-meet/index.html
+    depends_on:
+      - prosody
+      - jicofo
+      - jvb
+    networks:
+      meet.jitsi:
+
+  prosody:
+    image: jitsi/prosody:stable
+    restart: unless-stopped
+    environment:
+      - PUBLIC_URL=https://eway-meet.studentone.in
+      - ENABLE_HTTP_REDIRECT=1
+      - HTTP_PORT=8180
+      - HTTPS_PORT=8443
+      - TZ=UTC
+      - DOCKER_HOST_ADDRESS=76.13.246.154
+      - CONFIG=./jitsi-cfg
+      - XMPP_DOMAIN=meet.jitsi
+      - XMPP_AUTH_DOMAIN=auth.meet.jitsi
+      - XMPP_MUC_DOMAIN=muc.meet.jitsi
+      - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.meet.jitsi
+      - XMPP_RECORDER_DOMAIN=recorder.meet.jitsi
+      - ENABLE_AUTH=0
+      - ENABLE_GUESTS=1
+      - ENABLE_XMPP_WEBSOCKET=1
+      - WHITEBOARD_ENABLED=1
+      - WHITEBOARD_COLLAB_SERVER_PUBLIC_URL=https://eway-meet.studentone.in/excalidraw-collab
+      - ENABLE_COLIBRI_WEBSOCKET=1
+      - JVB_PORT=10000
+      - JVB_TCP_PORT=4443
+      - JVB_ENABLE_TCP_HARVESTER=1
+      - JICOFO_COMPONENT_SECRET=901f4a027a0c4b8da3a4b069b84c9a6f
+      - JICOFO_AUTH_PASSWORD=7d9d6e29c4fd482a9d7c6c2e807e5e3f
+      - JVB_AUTH_PASSWORD=6d12a9c7b8f14fbd96eab0f923f84a2c
+    volumes:
+      - ./jitsi-cfg/prosody:/config
+      - ./jitsi-cfg/prosody/prosody-plugins-custom:/prosody-plugins-custom
+    networks:
+      meet.jitsi:
+        aliases:
+          - xmpp.meet.jitsi
+
+  jicofo:
+    image: jitsi/jicofo:stable
+    restart: unless-stopped
+    environment:
+      - PUBLIC_URL=https://eway-meet.studentone.in
+      - ENABLE_HTTP_REDIRECT=1
+      - HTTP_PORT=8180
+      - HTTPS_PORT=8443
+      - TZ=UTC
+      - DOCKER_HOST_ADDRESS=76.13.246.154
+      - CONFIG=./jitsi-cfg
+      - XMPP_DOMAIN=meet.jitsi
+      - XMPP_AUTH_DOMAIN=auth.meet.jitsi
+      - XMPP_MUC_DOMAIN=muc.meet.jitsi
+      - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.meet.jitsi
+      - XMPP_RECORDER_DOMAIN=recorder.meet.jitsi
+      - ENABLE_AUTH=0
+      - ENABLE_GUESTS=1
+      - ENABLE_XMPP_WEBSOCKET=1
+      - WHITEBOARD_ENABLED=1
+      - WHITEBOARD_COLLAB_SERVER_PUBLIC_URL=https://eway-meet.studentone.in/excalidraw-collab
+      - ENABLE_COLIBRI_WEBSOCKET=1
+      - JVB_PORT=10000
+      - JVB_TCP_PORT=4443
+      - JVB_ENABLE_TCP_HARVESTER=1
+      - JICOFO_COMPONENT_SECRET=901f4a027a0c4b8da3a4b069b84c9a6f
+      - JICOFO_AUTH_PASSWORD=7d9d6e29c4fd482a9d7c6c2e807e5e3f
+      - JVB_AUTH_PASSWORD=6d12a9c7b8f14fbd96eab0f923f84a2c
+    volumes:
+      - ./jitsi-cfg/jicofo:/config
+    depends_on:
+      - prosody
+    networks:
+      meet.jitsi:
+
+  jvb:
+    image: jitsi/jvb:stable
+    restart: unless-stopped
+    environment:
+      - PUBLIC_URL=https://eway-meet.studentone.in
+      - ENABLE_HTTP_REDIRECT=1
+      - HTTP_PORT=8180
+      - HTTPS_PORT=8443
+      - TZ=UTC
+      - DOCKER_HOST_ADDRESS=76.13.246.154
+      - CONFIG=./jitsi-cfg
+      - XMPP_DOMAIN=meet.jitsi
+      - XMPP_AUTH_DOMAIN=auth.meet.jitsi
+      - XMPP_MUC_DOMAIN=muc.meet.jitsi
+      - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.meet.jitsi
+      - XMPP_RECORDER_DOMAIN=recorder.meet.jitsi
+      - ENABLE_AUTH=0
+      - ENABLE_GUESTS=1
+      - ENABLE_XMPP_WEBSOCKET=1
+      - WHITEBOARD_ENABLED=1
+      - WHITEBOARD_COLLAB_SERVER_PUBLIC_URL=https://eway-meet.studentone.in/excalidraw-collab
+      - ENABLE_COLIBRI_WEBSOCKET=1
+      - JVB_PORT=10000
+      - JVB_TCP_PORT=4443
+      - JVB_ENABLE_TCP_HARVESTER=1
+      - JICOFO_COMPONENT_SECRET=901f4a027a0c4b8da3a4b069b84c9a6f
+      - JICOFO_AUTH_PASSWORD=7d9d6e29c4fd482a9d7c6c2e807e5e3f
+      - JVB_AUTH_PASSWORD=6d12a9c7b8f14fbd96eab0f923f84a2c
+    volumes:
+      - ./jitsi-cfg/jvb:/config
+    ports:
+      - "10000:10000/udp"
+      - "4443:443/tcp"
+    depends_on:
+      - prosody
+    networks:
+      meet.jitsi:
+
+volumes: {}
+
+networks:
+  meet.jitsi:

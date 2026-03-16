@@ -140,8 +140,8 @@
             return;
         }
 
-        // Use relative path via Nginx proxy to avoid Mixed Content (HTTPS -> HTTP) issues
-        var verifyUrl = 'http://studentone.in/api/live-classes/verify-token?token=' + encodeURIComponent(token);
+        // Use absolute HTTPS path to backend to avoid CORS and Mixed Content issues
+        var verifyUrl = 'https://studentone.in/api/live-classes/verify-token?token=' + encodeURIComponent(token);
         var headers = {};
         if (userToken) {
             headers['Authorization'] = 'Bearer ' + userToken;
@@ -293,8 +293,8 @@
         btn.innerHTML = '<span style="color: white; font-size: 12px;">...</span>';
         
         // Construct API URL
-        // Using /api-proxy/ to route through Nginx to backend
-        var uploadUrl = 'http://studentone.in/api/live-classes/' + liveClassId + '/files';
+        // Use absolute HTTPS path to backend
+        var uploadUrl = 'https://studentone.in/api/live-classes/' + liveClassId + '/files';
 
         fetch(uploadUrl, {
             method: 'POST',

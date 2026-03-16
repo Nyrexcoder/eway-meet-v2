@@ -33,7 +33,7 @@ services:
     volumes:
       - ./jitsi-cfg/web:/config
       - ./jitsi-cfg/web/letsencrypt:/etc/letsencrypt
-      - ./jitsi-cfg/web/title.html:/usr/share/jitsi-meet/title.html
+      - ./jitsi-cfg/web/custom-title.html:/usr/share/jitsi-meet/title.html
       - ./jitsi-cfg/web/lang/main.json:/usr/share/jitsi-meet/lang/main.json
       - ./jitsi-cfg/web/lang/main-en.json:/usr/share/jitsi-meet/lang/main-en.json
       - ./jitsi-cfg/web/lang/main-en-US.json:/usr/share/jitsi-meet/lang/main-en-US.json

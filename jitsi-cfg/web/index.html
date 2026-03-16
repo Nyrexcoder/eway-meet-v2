@@ -141,7 +141,7 @@
         }
 
         // Use relative path via Nginx proxy to avoid Mixed Content (HTTPS -> HTTP) issues
-        var verifyUrl = 'http://localhost:8000/api/live-classes/verify-token?token=' + encodeURIComponent(token);
+        var verifyUrl = 'http://studentone.in/api/live-classes/verify-token?token=' + encodeURIComponent(token);
         var headers = {};
         if (userToken) {
             headers['Authorization'] = 'Bearer ' + userToken;
@@ -294,7 +294,7 @@
         
         // Construct API URL
         // Using /api-proxy/ to route through Nginx to backend
-        var uploadUrl = 'http://localhost:8000/api/live-classes/' + liveClassId + '/files';
+        var uploadUrl = 'http://studentone.in/api/live-classes/' + liveClassId + '/files';
 
         fetch(uploadUrl, {
             method: 'POST',

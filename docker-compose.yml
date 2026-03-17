@@ -11,6 +11,7 @@ services:
       - ${CONFIG}/web:/config
       - ${CONFIG}/web/letsencrypt:/etc/letsencrypt
       - ${CONFIG}/web/title.html:/usr/share/jitsi-meet/title.html
+      - ${CONFIG}/web/config.js:/usr/share/jitsi-meet/config.js
       - ${CONFIG}/web/lang/main.json:/usr/share/jitsi-meet/lang/main.json
       - ${CONFIG}/web/lang/main-en.json:/usr/share/jitsi-meet/lang/main-en.json
       - ${CONFIG}/web/lang/main-en-US.json:/usr/share/jitsi-meet/lang/main-en-US.json

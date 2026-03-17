@@ -14,8 +14,8 @@ if (subdomain) {
     subdomain = subdomain.substring(0,subdomain.length-1).split('.').join('_').toLowerCase() + '.';
 }
 config.hosts.muc = 'muc.' + subdomain + 'meet.jitsi';
-config.bosh = 'https://localhost:8443/' + subdir + 'http-bind';
-config.websocket = 'wss://localhost:8443/' + subdir + 'xmpp-websocket';
+config.bosh = 'https://https://72.61.243.146:8443/' + subdir + 'http-bind';
+config.websocket = 'wss://https://72.61.243.146:8443/' + subdir + 'xmpp-websocket';
 config.bridgeChannel = {
     preferSctp: true
 };
@@ -208,7 +208,7 @@ config.e2eping = {
 // Settings for the Excalidraw whiteboard integration.
 config.whiteboard = {
     enabled: true,
-collabServerBaseUrl: 'https://localhost:8443/excalidraw-collab'
+collabServerBaseUrl: 'https://https://72.61.243.146:8443/excalidraw-collab'
 };
 
 // JaaS support: pre-configure image if JAAS_APP_ID was set.

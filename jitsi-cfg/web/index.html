@@ -550,7 +550,34 @@
     <!--#include virtual="plugin.head.html" -->
     <!--#include virtual="static/welcomePageAdditionalContent.html" -->
     <!--#include virtual="static/welcomePageAdditionalCard.html" -->
-    <!--#include virtual="static/settingsToolbarAdditionalContent.html" -->     
+    <!--#include virtual="static/settingsToolbarAdditionalContent.html" --> 
+     <script>
+        // Force Override Jitsi Hero Text
+        document.addEventListener('DOMContentLoaded', function() {
+            var heroObserver = new MutationObserver(function(mutations) {
+                var h1s = document.querySelectorAll('h1.header-text-title');
+                if (h1s.length === 0) {
+                    h1s = document.querySelectorAll('.welcome-page h1, .header h1, h1');
+                }
+                h1s.forEach(function(h1) {
+                    if (h1.textContent.trim() === 'Jitsi Meet') {
+                        h1.textContent = 'Eway Meet';
+                    }
+                });
+
+                var ps = document.querySelectorAll('p.header-text-subtitle');
+                if (ps.length === 0) {
+                    ps = document.querySelectorAll('.welcome-page p, .header p');
+                }
+                ps.forEach(function(p) {
+                    if (p.textContent.trim() === 'Secure and high quality meetings') {
+                        p.textContent = 'Connect and collaborate';
+                    }
+                });
+            });
+            heroObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
+        });
+    </script>    
   </head>
   <body>
     <noscript aria-hidden="true">

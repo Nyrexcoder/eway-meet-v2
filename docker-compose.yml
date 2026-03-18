@@ -16,7 +16,7 @@ services:
       - ${CONFIG}/web/lang/main-en.json:/usr/share/jitsi-meet/lang/main-en.json
       - ${CONFIG}/web/lang/main-en-US.json:/usr/share/jitsi-meet/lang/main-en-US.json
       - ${CONFIG}/web/interface_config_custom_v2.js:/config/interface_config.js
-      - ${CONFIG}/web/interface_config_custom_v2.js:/usr/share/jitsi-meet/interface_config.js:ro
+      - ${CONFIG}/web/interface_config_custom_v2.js:/usr/share/jitsi-meet/interface_config.js
       - ${CONFIG}/web/images/watermark.svg:/usr/share/jitsi-meet/images/watermark.svg
       - ${CONFIG}/web/images/logo.png:/usr/share/jitsi-meet/images/logo.png
       - ${CONFIG}/web/images/logo.png:/usr/share/jitsi-meet/images/favicon.ico

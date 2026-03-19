@@ -26,10 +26,20 @@ services:
     volumes:
       - ${CONFIG}/web:/config
       - ${CONFIG}/web/letsencrypt:/etc/letsencrypt
-      - ${CONFIG}/web/config.js:/config.js
-      - ${CONFIG}/web/interface_config.js:/interface_config.js
-      - ${CONFIG}/web/watermark.svg:/usr/share/jitsi-meet/images/watermark.svg
-      - ${CONFIG}/web/logo.png:/usr/share/jitsi-meet/images/logo.png
+      - ${CONFIG}/web/title.html:/usr/share/jitsi-meet/title.html
+      - ${CONFIG}/web/config.js:/usr/share/jitsi-meet/config.js
+      - ${CONFIG}/web/lang/main.json:/usr/share/jitsi-meet/lang/main.json
+      - ${CONFIG}/web/lang/main-en.json:/usr/share/jitsi-meet/lang/main-en.json
+      - ${CONFIG}/web/lang/main-en-US.json:/usr/share/jitsi-meet/lang/main-en-US.json
+      - ${CONFIG}/web/interface_config_custom_v2.js:/config/interface_config.js
+      - ${CONFIG}/web/interface_config_custom_v2.js:/usr/share/jitsi-meet/interface_config.js
+      - ${CONFIG}/web/images/watermark.svg:/usr/share/jitsi-meet/images/watermark.svg
+      - ${CONFIG}/web/images/logo.png:/usr/share/jitsi-meet/images/logo.png
+      - ${CONFIG}/web/images/logo.png:/usr/share/jitsi-meet/images/favicon.ico
+      - ${CONFIG}/web/images/logo.png:/usr/share/jitsi-meet/images/apple-touch-icon.png
+      - ${CONFIG}/web/static/welcomePageAdditionalContent.html:/usr/share/jitsi-meet/static/welcomePageAdditionalContent.html
+      - ${CONFIG}/web/manifest.json:/usr/share/jitsi-meet/manifest.json
+      - ${CONFIG}/web/index.html:/usr/share/jitsi-meet/index.html
 
   prosody:
     image: jitsi/prosody:stable

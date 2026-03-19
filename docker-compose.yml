@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
   web:
     image: jitsi/web:stable
@@ -13,11 +15,6 @@ services:
 
     networks:
       meet.jitsi:
-        aliases:
-          - xmpp.meet.jitsi
-          - auth.meet.jitsi
-
-      dokploy-network: {}
 
     labels:
       - "traefik.enable=true"
@@ -29,14 +26,10 @@ services:
     volumes:
       - ${CONFIG}/web:/config
       - ${CONFIG}/web/letsencrypt:/etc/letsencrypt
-      - ${CONFIG}/web/title.html:/usr/share/jitsi-meet/title.html
-      - ${CONFIG}/web/config.js:/usr/share/jitsi-meet/config.js
-      - ${CONFIG}/web/lang/main.json:/usr/share/jitsi-meet/lang/main.json
-      - ${CONFIG}/web/lang/main-en.json:/usr/share/jitsi-meet/lang/main-en.json
-      - ${CONFIG}/web/lang/main-en-US.json:/usr/share/jitsi-meet/lang/main-en-US.json
-      - ${CONFIG}/web/interface_config_custom_v2.js:/usr/share/jitsi-meet/interface_config.js
-      - ${CONFIG}/web/images/watermark.svg:/usr/share/jitsi-meet/images/watermark.svg
-      - ${CONFIG}/web/images/logo.png:/usr/share/jitsi-meet/images/logo.png
+      - ${CONFIG}/web/config.js:/config.js
+      - ${CONFIG}/web/interface_config.js:/interface_config.js
+      - ${CONFIG}/web/watermark.svg:/usr/share/jitsi-meet/images/watermark.svg
+      - ${CONFIG}/web/logo.png:/usr/share/jitsi-meet/images/logo.png
 
   prosody:
     image: jitsi/prosody:stable
@@ -55,7 +48,7 @@ services:
 
     volumes:
       - ${CONFIG}/prosody:/config
-      - ${CONFIG}/prosody/prosody-plugins-custom:/prosody-plugins-custom
+      - ${CONFIG}/prosody/plugins:/prosody-plugins-custom
 
   jicofo:
     image: jitsi/jicofo:stable
@@ -69,8 +62,6 @@ services:
 
     networks:
       meet.jitsi:
-        aliases:
-          - jicofo.meet.jitsi
 
     volumes:
       - ${CONFIG}/jicofo:/config
@@ -91,17 +82,10 @@ services:
 
     networks:
       meet.jitsi:
-        aliases:
-          - jvb.meet.jitsi
 
     volumes:
       - ${CONFIG}/jvb:/config
 
-volumes: {}
-
 networks:
   meet.jitsi:
     driver: bridge
-
-  dokploy-network:
-    external: true

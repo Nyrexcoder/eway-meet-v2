@@ -1,0 +1,86 @@
+services:
+  web:
+    image: jitsi/web:stable
+    restart: unless-stopped
+    # ports section REMOVE karo - Traefik handle karega
+    env_file:
+      - .env
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jitsi-web.rule=Host(`eway-meet.studentplus2.in`)"
+      - "traefik.http.routers.jitsi-web.entrypoints=websecure"
+      - "traefik.http.routers.jitsi-web.tls=true"
+      - "traefik.http.routers.jitsi-web.tls.certresolver=letsencrypt"
+      - "traefik.http.services.jitsi-web.loadbalancer.server.port=80"
+      - "traefik.docker.network=dokploy-network"
+    volumes:
+      - ${CONFIG}/web:/config
+      - ${CONFIG}/web/letsencrypt:/etc/letsencrypt
+      - ${CONFIG}/web/title.html:/usr/share/jitsi-meet/title.html
+      - ${CONFIG}/web/config.js:/usr/share/jitsi-meet/config.js
+      - ${CONFIG}/web/lang/main.json:/usr/share/jitsi-meet/lang/main.json
+      - ${CONFIG}/web/lang/main-en.json:/usr/share/jitsi-meet/lang/main-en.json
+      - ${CONFIG}/web/lang/main-en-US.json:/usr/share/jitsi-meet/lang/main-en-US.json
+      - ${CONFIG}/web/interface_config_custom_v2.js:/config/interface_config.js
+      - ${CONFIG}/web/interface_config_custom_v2.js:/usr/share/jitsi-meet/interface_config.js
+      - ${CONFIG}/web/images/watermark.svg:/usr/share/jitsi-meet/images/watermark.svg
+      - ${CONFIG}/web/images/logo.png:/usr/share/jitsi-meet/images/logo.png
+      - ${CONFIG}/web/images/logo.png:/usr/share/jitsi-meet/images/favicon.ico
+      - ${CONFIG}/web/images/logo.png:/usr/share/jitsi-meet/images/apple-touch-icon.png
+      - ${CONFIG}/web/static/welcomePageAdditionalContent.html:/usr/share/jitsi-meet/static/welcomePageAdditionalContent.html
+      - ${CONFIG}/web/manifest.json:/usr/share/jitsi-meet/manifest.json
+      - ${CONFIG}/web/index.html:/usr/share/jitsi-meet/index.html
+    depends_on:
+      - prosody
+      - jicofo
+      - jvb
+    networks:
+      - meet.jitsi
+      - dokploy-network  # Traefik ke liye zaroori
+
+  prosody:
+    image: jitsi/prosody:stable
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ${CONFIG}/prosody:/config
+      - ${CONFIG}/prosody/prosody-plugins-custom:/prosody-plugins-custom
+    networks:
+      meet.jitsi:
+        aliases:
+          - xmpp.meet.jitsi
+
+  jicofo:
+    image: jitsi/jicofo:stable
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ${CONFIG}/jicofo:/config
+    depends_on:
+      - prosody
+    networks:
+      meet.jitsi:
+
+  jvb:
+    image: jitsi/jvb:stable
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ${CONFIG}/jvb:/config
+    ports:
+      - "${JVB_PORT}:10000/udp"   # JVB ke ports rakhna zaroori hai
+      - "${JVB_TCP_PORT}:4443/tcp"
+    depends_on:
+      - prosody
+    networks:
+      meet.jitsi:
+
+volumes: {}
+
+networks:
+  meet.jitsi:
+  dokploy-network:
+    external: true  # Dokploy ka existing network use karega

@@ -18,10 +18,10 @@ services:
 
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.jitsi.rule=Host(`eway-meet.studentplus2.in`)"
-      - "traefik.http.routers.jitsi.entrypoints=websecure"
-      - "traefik.http.routers.jitsi.tls.certresolver=letsencrypt"
-      - "traefik.http.services.jitsi.loadbalancer.server.port=80"
+      - "traefik.http.routers.jitsi-eway.rule=Host(`eway-meet.studentplus2.in`)"
+      - "traefik.http.routers.jitsi-eway.entrypoints=websecure"
+      - "traefik.http.routers.jitsi-eway.tls.certresolver=letsencrypt"
+      - "traefik.http.services.jitsi-eway.loadbalancer.server.port=80"
 
     volumes:
       - ${CONFIG}/web:/config

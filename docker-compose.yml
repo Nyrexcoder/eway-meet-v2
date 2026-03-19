@@ -3,13 +3,28 @@ services:
     image: jitsi/web:stable
     restart: unless-stopped
 
-    # ❌ removed host ports (Traefik will handle 80/443)
-    # ports:
-    #   - "${HTTP_PORT}:80"
-    #   - "${HTTPS_PORT}:443"
-
     env_file:
       - .env
+
+    depends_on:
+      - prosody
+      - jicofo
+      - jvb
+
+    networks:
+      meet.jitsi:
+        aliases:
+          - xmpp.meet.jitsi
+          - auth.meet.jitsi
+
+      dokploy-network: {}
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jitsi.rule=Host(`eway-meet.studentplus2.in`)"
+      - "traefik.http.routers.jitsi.entrypoints=websecure"
+      - "traefik.http.routers.jitsi.tls.certresolver=letsencrypt"
+      - "traefik.http.services.jitsi.loadbalancer.server.port=80"
 
     volumes:
       - ${CONFIG}/web:/config
@@ -19,76 +34,74 @@ services:
       - ${CONFIG}/web/lang/main.json:/usr/share/jitsi-meet/lang/main.json
       - ${CONFIG}/web/lang/main-en.json:/usr/share/jitsi-meet/lang/main-en.json
       - ${CONFIG}/web/lang/main-en-US.json:/usr/share/jitsi-meet/lang/main-en-US.json
-      - ${CONFIG}/web/interface_config_custom_v2.js:/config/interface_config.js
       - ${CONFIG}/web/interface_config_custom_v2.js:/usr/share/jitsi-meet/interface_config.js
       - ${CONFIG}/web/images/watermark.svg:/usr/share/jitsi-meet/images/watermark.svg
       - ${CONFIG}/web/images/logo.png:/usr/share/jitsi-meet/images/logo.png
-      - ${CONFIG}/web/images/logo.png:/usr/share/jitsi-meet/images/favicon.ico
-      - ${CONFIG}/web/images/logo.png:/usr/share/jitsi-meet/images/apple-touch-icon.png
-      - ${CONFIG}/web/static/welcomePageAdditionalContent.html:/usr/share/jitsi-meet/static/welcomePageAdditionalContent.html
-      - ${CONFIG}/web/manifest.json:/usr/share/jitsi-meet/manifest.json
-      - ${CONFIG}/web/index.html:/usr/share/jitsi-meet/index.html
-
-    depends_on:
-      - prosody
-      - jicofo
-      - jvb
-
-    networks:
-      - meet.jitsi
-      - dokploy-network   # ✅ Traefik network added
-
 
   prosody:
     image: jitsi/prosody:stable
     restart: unless-stopped
+
     env_file:
       - .env
+
+    networks:
+      meet.jitsi:
+        aliases:
+          - xmpp.meet.jitsi
+          - auth.meet.jitsi
+          - muc.meet.jitsi
+          - internal-muc.meet.jitsi
+
     volumes:
       - ${CONFIG}/prosody:/config
       - ${CONFIG}/prosody/prosody-plugins-custom:/prosody-plugins-custom
-    networks:
-      - meet.jitsi
-      - dokploy-network   # optional but safe
-
 
   jicofo:
     image: jitsi/jicofo:stable
     restart: unless-stopped
+
     env_file:
       - .env
-    volumes:
-      - ${CONFIG}/jicofo:/config
+
     depends_on:
       - prosody
-    networks:
-      - meet.jitsi
-      - dokploy-network
 
+    networks:
+      meet.jitsi:
+        aliases:
+          - jicofo.meet.jitsi
+
+    volumes:
+      - ${CONFIG}/jicofo:/config
 
   jvb:
     image: jitsi/jvb:stable
     restart: unless-stopped
+
     env_file:
       - .env
-    volumes:
-      - ${CONFIG}/jvb:/config
 
-    # ✅ safer JVB config (no random host conflicts)
+    depends_on:
+      - prosody
+
     ports:
       - "10000:10000/udp"
       - "4443:4443/tcp"
 
-    depends_on:
-      - prosody
     networks:
-      - meet.jitsi
-      - dokploy-network
+      meet.jitsi:
+        aliases:
+          - jvb.meet.jitsi
 
+    volumes:
+      - ${CONFIG}/jvb:/config
 
 volumes: {}
 
 networks:
   meet.jitsi:
+    driver: bridge
+
   dokploy-network:
     external: true

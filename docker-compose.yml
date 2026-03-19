@@ -5,6 +5,14 @@ services:
     # ports section REMOVE karo - Traefik handle karega
     env_file:
       - .env
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jitsi-web.rule=Host(`eway-meet.studentplus2.in`)"
+      - "traefik.http.routers.jitsi-web.entrypoints=websecure"
+      - "traefik.http.routers.jitsi-web.tls=true"
+      - "traefik.http.routers.jitsi-web.tls.certresolver=letsencrypt"
+      - "traefik.http.services.jitsi-web.loadbalancer.server.port=80"
+      - "traefik.docker.network=dokploy-network"
     volumes:
       - ${CONFIG}/web:/config
       - ${CONFIG}/web/letsencrypt:/etc/letsencrypt

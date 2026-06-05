@@ -7,7 +7,7 @@ services:
       - .env
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.jitsi-web.rule=Host(`eway-meet.studentplus2.in`)"
+      - "traefik.http.routers.jitsi-web.rule=Host(`eway-meet.studentone.in`)"
       - "traefik.http.routers.jitsi-web.entrypoints=websecure"
       - "traefik.http.routers.jitsi-web.tls=true"
       - "traefik.http.routers.jitsi-web.tls.certresolver=letsencrypt"
